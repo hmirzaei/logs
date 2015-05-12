@@ -1,0 +1,135 @@
+
+<% content_for :head do %>
+
+<script>spark_log=<%=raw @spark_log.to_json %></script>
+<script>all_keys=<%=raw @all_keys.to_json %></script>
+
+<style>
+  <%=raw Pygments.css('.highlight') %>
+  .grid {
+  width: 100;
+  height: 500px;
+  font-size: small;
+  }
+
+  .my-custom-menu {
+  position: absolute;
+  }
+
+  .my-custom-menu .ui-grid-menu {
+  padding: 0px;
+  }
+
+  .my-custom-menu .ui-grid-menu-inner {
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  }
+
+  .rotated {
+  transform: rotate(180deg);
+  -webkit-transform: rotate(180deg);
+  -ms-transform: rotate(180deg);
+  -moz-transform: rotate(180deg);
+  -o-transform: rotate(180deg);
+  }
+
+
+  
+</style>
+
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular-touch.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular-animate.js"></script>
+<script src="http://ui-grid.info/docs/grunt-scripts/csv.js"></script>
+<script src="http://ui-grid.info/docs/grunt-scripts/pdfmake.js"></script>
+<script src="http://ui-grid.info/docs/grunt-scripts/vfs_fonts.js"></script>
+<script src="http://ui-grid.info/release/ui-grid-unstable.js"></script>
+<link rel="stylesheet" href="http://ui-grid.info/release/ui-grid-unstable.css" type="text/css">
+
+
+<% end %>
+
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Application</th>
+      <th>Tool</th>
+      <th>Test File</th>
+      <th># Workers</th>
+      <th>VM Memory</th>
+      <th>Machine Type</th>
+      <th>Avg. User CPU</th>
+      <th>Avg. System CPU</th>
+      <th>Avg. CPU Idle</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><%= @logfile.time %></td>
+      <td><%= @logfile.app %></td>
+      <td><%= @logfile.tool %></td>
+      <td><%= @logfile.testfile %></td>
+      <td><%= @logfile.noworker %></td>
+      <td><%= @logfile.vmmem %></td>
+      <td><%= @logfile.machinetype %></td>
+      <td><%= number_with_precision(@summary.user_cpu, :precision => 2) %> &nbsp; %</td>
+      <td><%= number_with_precision(@summary.sys_cpu, :precision => 2) %> &nbsp; %</td>
+      <td><%= number_with_precision(@summary.idle, :precision => 2) %>  &nbsp;  %</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4> Simulation Time: </h4>
+<p><b> <%= @summary.sim_time %> </b></p>
+
+<h4> Spark Logs </h4>
+
+
+<div align="center" >
+  <span> Log Parameter: </span>
+  <select  onchange="fieldChanged(this.value)" style="width:300px">
+    <% @all_keys.each do |key| %>
+    <option value= "<%=raw key %>" <%if key == "Task Duration" %> selected="selected" <% end %> > <%=raw key %> </option>
+    <% end %>
+  </select>
+</div>
+
+<div style="width:10" align="center">
+  <div id="barchart"></div>
+  <p align="center"> Task ID </p>
+</div>
+
+<div id="accordion">
+  <div>
+    <h3><a href="#">Jobs, Stages and Tasks</a></h3>
+    <div ng-controller="MainCtrl">
+      <div id="grid1" ui-grid="gridOptions" ui-grid-exporter ui-grid-grouping ui-grid-auto-resize ui-grid-resize-columns ui-grid-move-columns  class="grid"></div>
+    </div>
+  </div>
+</div>
+
+
+<h4> Text Files </h4>
+
+<div id="accordion">
+  <div>
+    <h3><a href="#">Console Output</a></h3>
+    <div>
+      <%=raw CodeRay.scan(@summary.console, :text).div(:line_numbers => :table, :wrap => :div) %>
+    </div>
+  </div>
+  <div>
+    <h3><a href="#">Test Script</a></h3>
+    <div>
+      <%=raw Pygments.highlight(@summary.test_script, :lexer => 'bash', options: {linenos: true}) %>
+    </div>
+  </div>
+  <div>
+    <h3><a href="#">Application Scala</a></h3>
+    <div>
+      <%=raw Pygments.highlight(@summary.app_scala, :lexer => 'scala', options: {linenos: true}) %>
+    </div>
+  </div>
+</div>
+

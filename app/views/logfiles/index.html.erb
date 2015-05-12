@@ -1,0 +1,41 @@
+<% if !flash[:notice].blank? %>
+  <div class="alert alert-info">
+  <%= flash[:notice] %>
+  </div>
+<% end %>
+
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Application</th>
+      <th>Tool</th>
+      <th>Test File</th>
+      <th># Workers</th>
+      <th>VM Memory</th>
+      <th>Machine Type</th>
+      <th>Simulation Time</th>
+      <th>Download Link</th>
+      <th>&nbsp;</th>
+      <th>&nbsp;</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @logfiles.each do |logfile| %>
+      <tr>
+        <td><%= logfile.time %></td>
+        <td><%= logfile.app %></td>
+        <td><%= logfile.tool %></td>
+        <td><%= logfile.testfile %></td>
+        <td><%= logfile.noworker %></td>
+        <td><%= logfile.vmmem %></td>
+        <td><%= logfile.machinetype %></td>
+        <td><%= logfile.simtime %></td>
+        <td><%= link_to "Download Log File", logfile.attachment_url %></td>
+        <td><%= link_to "Details",  logfile %></td>
+        <td><%= button_to "Delete",  logfile, method: :delete, class: "button alert tiny", data: { confirm: "Are you sure that you wish to delete #{logfile.time}?"} %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
