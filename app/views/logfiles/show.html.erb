@@ -3,9 +3,14 @@
 
 <script>spark_log=<%=raw @spark_log.to_json %></script>
 <script>all_keys=<%=raw @all_keys.to_json %></script>
+<script>iostat_log=<%=raw @iostat_log.to_json %></script>
 
 <style>
   <%=raw Pygments.css('.highlight') %>
+  table#lperfplots tr:nth-of-type(even) {
+      background-color: transparent !important;
+  }
+
   .grid {
   width: 100;
   height: 500px;
@@ -34,7 +39,7 @@
   }
 
 
-  
+
 </style>
 
 <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.js"></script>
@@ -50,38 +55,78 @@
 <% end %>
 
 <table class="table table-bordered table-striped">
-  <thead>
+    <thead>
     <tr>
-      <th>Time</th>
-      <th>Application</th>
-      <th>Tool</th>
-      <th>Test File</th>
-      <th># Workers</th>
-      <th>VM Memory</th>
-      <th>Machine Type</th>
-      <th>Avg. User CPU</th>
-      <th>Avg. System CPU</th>
-      <th>Avg. CPU Idle</th>
+        <th>Time</th>
+        <th>Application</th>
+        <th>Tool</th>
+        <th>Test File</th>
+        <th># Workers</th>
+        <th>VM Memory</th>
+        <th>Machine Type</th>
+        <th>Avg. User CPU</th>
+        <th>Avg. System CPU</th>
+        <th>Avg. CPU Idle</th>
     </tr>
-  </thead>
-  <tbody>
+    </thead>
+    <tbody>
     <tr>
-      <td><%= @logfile.time %></td>
-      <td><%= @logfile.app %></td>
-      <td><%= @logfile.tool %></td>
-      <td><%= @logfile.testfile %></td>
-      <td><%= @logfile.noworker %></td>
-      <td><%= @logfile.vmmem %></td>
-      <td><%= @logfile.machinetype %></td>
-      <td><%= number_with_precision(@summary.user_cpu, :precision => 2) %> &nbsp; %</td>
-      <td><%= number_with_precision(@summary.sys_cpu, :precision => 2) %> &nbsp; %</td>
-      <td><%= number_with_precision(@summary.idle, :precision => 2) %>  &nbsp;  %</td>
+        <td><%= @logfile.time %></td>
+        <td><%= @logfile.app %></td>
+        <td><%= @logfile.tool %></td>
+        <td><%= @logfile.testfile %></td>
+        <td><%= @logfile.noworker %></td>
+        <td><%= @logfile.vmmem %></td>
+        <td><%= @logfile.machinetype %></td>
+        <td><%= number_with_precision(@summary.user_cpu, :precision => 2) %> &nbsp; %</td>
+        <td><%= number_with_precision(@summary.sys_cpu, :precision => 2) %> &nbsp; %</td>
+        <td><%= number_with_precision(@summary.idle, :precision => 2) %> &nbsp; %</td>
     </tr>
-  </tbody>
+    </tbody>
 </table>
 
 <h4> Simulation Time: </h4>
 <p><b> <%= @summary.sim_time %> </b></p>
+
+<script>
+$(document).ready(function () {
+function drawBasic() {
+    var variable = [4,5,10,12];
+
+    var data=[];
+    var options=[];
+    var chart=[];
+    for (var ind=0; ind<4; ind++) {
+        data[ind] = new google.visualization.DataTable();
+        data[ind].addColumn('number', 'Time');
+        for (var dev=0; dev < iostat_log.dev.length; dev++)
+            data[ind].addColumn('number', iostat_log.dev[dev]);
+
+        for (var t in iostat_log.time) {
+            var row = [iostat_log.time[t]];
+            for (dev = 0; dev < iostat_log.dev.length; dev++)
+                row.push(iostat_log.dat[dev][variable[ind]][t]);
+            data[ind].addRow(row);
+        }
+
+        options[ind] = {
+            hAxis: {
+                title: 'Time'
+            },
+            vAxis: {
+                title: iostat_log.var[variable[ind]]
+            }
+        };
+        chart[ind] = new google.visualization.LineChart(document.getElementById('chart'+ind+'_div'));
+        chart[ind].draw(data[ind], options[ind]);
+    }
+
+}
+
+    google.load('visualization', '1', {packages: ['corechart', 'line'], "callback": drawBasic});
+
+});
+</script>
 
 <h4> Spark Logs </h4>
 
@@ -108,6 +153,22 @@
     </div>
   </div>
 </div>
+
+<h4> Lperf Logs </h4>
+
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<table id="lperfplots" width="100%">
+    <tbody>
+    <tr>
+        <td width="50%"><div id="chart0_div"></div></td>
+        <td width="50%"><div id="chart1_div"></div></td>
+    </tr>
+    <tr>
+        <td width="50%"><div id="chart2_div"></div></td>
+        <td width="50%"><div id="chart3_div"></div></td>
+    </tr>
+    </tbody>
+</table>
 
 
 <h4> Text Files </h4>

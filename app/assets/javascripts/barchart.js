@@ -116,6 +116,7 @@ ready = function () {
             .filter(function (d) {
                 return (barX(d["Task ID"]) != null)
             })
+            .attr("class", "barrect")
             .attr("x", function (d) {
                 return barX(d["Task ID"]);
             })

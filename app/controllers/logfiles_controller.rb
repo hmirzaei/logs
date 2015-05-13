@@ -25,6 +25,30 @@ class LogfilesController < ApplicationController
     }
   end
   
+  def cascade(a,b) 
+    (a.zip b).map{|a_row, b_row| (a_row.zip b_row).map{|a_col, b_col| (a_col.is_a? Array) ? a_col+ [b_col]:[a_col]+[b_col]}} 
+  end
+
+
+  def parse_iostat(s)
+    iostat = {}
+    csv = s.split("\n\n")[1..-1].map{|x| CSV.parse x, {:col_sep => " "}}
+    iostat_raw = csv.inject{|result,n| cascade(result,n)}
+
+    iostat[:dev] =  csv[0][1..-1].transpose[0][1..-1]
+    iostat[:var] =  csv[0][1][1..-1]
+
+    f = iostat_raw[0][0..2].transpose.map{|x| x.join(' ')}
+
+    iostat[:time] = iostat_raw[0][0..2].transpose.map{|x| DateTime.strptime(x.join(' '),'%m/%d/%Y %l:%M:%S %p').to_i}
+    iostat[:time] = iostat[:time].map{|t| t-iostat[:time][0]}
+
+    iostat[:dat] = iostat_raw[2..-1]
+    iostat[:dat].each{|x| x.each{|y| y.map!{|z| z.to_f}}}
+    iostat[:dat].each{|row| row.shift}
+
+    iostat
+  end
 
   def parse_spark_log(s)
     spark_log = []
@@ -49,7 +73,7 @@ class LogfilesController < ApplicationController
         }
         newEntry["Stages"]=json["Stage Infos"];
         spark_log.push(newEntry)
-      #------------------------------------------------------------------
+        #------------------------------------------------------------------
       elsif json["Event"] == "SparkListenerJobEnd" 
         
         prev_entry = spark_log.select {|k| k["Job ID"] == json["Job ID"]}.first
@@ -62,7 +86,7 @@ class LogfilesController < ApplicationController
             end
           end
         }
-      #------------------------------------------------------------------
+        #------------------------------------------------------------------
       elsif json["Event"] == "SparkListenerTaskStart" 
         
         stage = find_stage(spark_log, json["Stage ID"])
@@ -71,7 +95,7 @@ class LogfilesController < ApplicationController
         else
           stage["Tasks"].push json["Task Info"]
         end
-      #------------------------------------------------------------------
+        #------------------------------------------------------------------
       elsif json["Event"] == "SparkListenerTaskEnd" 
         stage = find_stage(spark_log, json["Stage ID"])
         task = stage["Tasks"].select {|k| k["Task ID"] == json["Task Info"]["Task ID"]}.first
@@ -133,7 +157,7 @@ class LogfilesController < ApplicationController
   def show
     @logfile = Logfile.find(params[:id]) 
     @summary = Summary.new
-    @summary.sim_time = 0
+
 
     tar_extract = Gem::Package::TarReader.new(File.open(@logfile.attachment.path))
     tar_extract.rewind # The extract has to be rewinded after every iteration
@@ -150,14 +174,17 @@ class LogfilesController < ApplicationController
         if !s.nil?
           @spark_log=parse_spark_log(s)
         end
+      elsif entry.full_name.start_with?("lperf/system/iostat")
+        s = entry.read
+        if !s.nil?
+          @iostat_log=parse_iostat(s)
+        end
       elsif entry.full_name.start_with?("lperf/plot/cpus")
         csv = CSV.parse(entry.read, {:col_sep => " "})
         csv.shift
         @summary.user_cpu = csv.map{|x| x[3].to_f}.inject(:+)/csv.length
         @summary.sys_cpu = csv.map{|x| x[5].to_f}.inject(:+)/csv.length
         @summary.idle = csv.map{|x| x[-1].to_f}.inject(:+)/csv.length
-
-        
       end
     end
     tar_extract.close    
