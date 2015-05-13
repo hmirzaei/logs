@@ -20,7 +20,7 @@ class LogfilesController < ApplicationController
 
   def find_stage(jobs, stage_id)
     jobs.each { |job|
-      s = job["Stages"].select {|k| k["Stage ID"] == stage_id}.first
+      s = job["Stages"].select {|k| k["Stage ID"] == stage_id}.min
       return s unless s.nil?
     }
   end
@@ -124,8 +124,11 @@ class LogfilesController < ApplicationController
       end
     }
 
+    min_time = table.map{|row| row["Submission Time"]}.compact.first
+    table.each{ |row| row.each { |key, value| if ["Completion Time", "Submission Time", "Launch Time", "Finish Time"].include? key  then row[key] = row[key] - min_time if !value.nil?  end}}    
+    
     table.each{ |row|
-      row["Job Duration"] = row.has_key?("Completen Time") ? row["Completion Time"] - row["Submission Time"] : nil
+      row["Job Duration"] = row.has_key?("Completion Time") ? row["Completion Time"] - row["Submission Time"] : nil
       row["Task Duration"] = row.has_key?("Finish Time") ? row["Finish Time"] - row["Launch Time"] : nil
     }      
 
