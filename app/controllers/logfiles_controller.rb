@@ -50,6 +50,28 @@ class LogfilesController < ApplicationController
     iostat
   end
 
+  def parse_cpus(s)
+    cpus = {}
+    csv = CSV.parse(s, {:col_sep => " "})
+    csv.shift
+    cpus[:time] = csv.map{|x| DateTime.strptime(x[0]+' '+x[1],'%l:%M:%S %p').to_i}
+    cpus[:time] = cpus[:time].map{|t| t-cpus[:time][0]}    
+    cpus[:dat] = csv.map{|x| x[3].to_f + x[5].to_f}
+    
+    cpus
+  end
+
+  def parse_mem(s)
+    mem = {}
+    csv = CSV.parse(s, {:col_sep => ",\t"})
+    csv.shift
+    mem[:time] = csv.map{|x| DateTime.strptime(x[0],'%L:%M:%S').to_i}
+    mem[:time] = mem[:time].map{|t| t-mem[:time][0]}    
+    mem[:dat] = csv.map{|x| x[1].to_i}
+    
+    mem
+  end
+
   def parse_spark_log(s)
     spark_log = []
     s = s.chomp
@@ -181,6 +203,16 @@ class LogfilesController < ApplicationController
         s = entry.read
         if !s.nil?
           @iostat_log=parse_iostat(s)
+        end
+      elsif entry.full_name.start_with?("lperf/plot/cpus")
+        s = entry.read
+        if !s.nil?
+          @cpus_log=parse_cpus(s)
+        end
+      elsif entry.full_name.start_with?("lperf/plot/mem")
+        s = entry.read
+        if !s.nil?
+          @mem_log=parse_mem(s)
         end
       elsif entry.full_name.start_with?("lperf/plot/cpus")
         csv = CSV.parse(entry.read, {:col_sep => " "})

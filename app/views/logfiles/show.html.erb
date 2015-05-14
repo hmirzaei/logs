@@ -4,6 +4,8 @@
 <script>spark_log=<%=raw @spark_log.to_json %></script>
 <script>all_keys=<%=raw @all_keys.to_json %></script>
 <script>iostat_log=<%=raw @iostat_log.to_json %></script>
+<script>cpus_log=<%=raw @cpus_log.to_json %></script>
+<script>mem_log=<%=raw @mem_log.to_json %></script>
 
 <style>
   <%=raw Pygments.css('.highlight') %>
@@ -90,38 +92,46 @@
 
 <script>
 $(document).ready(function () {
-function drawBasic() {
-    var variable = [4,5,10,12];
 
-    var data=[];
-    var options=[];
-    var chart=[];
-    for (var ind=0; ind<4; ind++) {
-        data[ind] = new google.visualization.DataTable();
-        data[ind].addColumn('number', 'Time');
-        for (var dev=0; dev < iostat_log.dev.length; dev++)
-            data[ind].addColumn('number', iostat_log.dev[dev]);
+    function addGoogleLinePlot(time, columns, dataArray, title, chartId) {
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'Time');
+        for (var i = 0; i < columns.length; i++)
+            data.addColumn('number', columns[i]);
 
-        for (var t in iostat_log.time) {
-            var row = [iostat_log.time[t]];
-            for (dev = 0; dev < iostat_log.dev.length; dev++)
-                row.push(iostat_log.dat[dev][variable[ind]][t]);
-            data[ind].addRow(row);
+        for (var t in time) {
+            var row = [time[t]];
+            for (i = 0; i < columns.length; i++)
+                row.push(dataArray[i][t]);
+            data.addRow(row);
         }
 
-        options[ind] = {
+        var options = {
             hAxis: {
                 title: 'Time'
             },
             vAxis: {
-                title: iostat_log.var[variable[ind]]
+                title: title
             }
         };
-        chart[ind] = new google.visualization.LineChart(document.getElementById('chart'+ind+'_div'));
-        chart[ind].draw(data[ind], options[ind]);
+        var chart = new google.visualization.LineChart(document.getElementById(chartId));
+        chart.draw(data, options);
     }
 
-}
+    function drawBasic() {
+
+        addGoogleLinePlot(iostat_log.time, iostat_log.dev, iostat_log.dat.map(function(value,index) { return value[4]; }),
+                iostat_log.var[4], 'chart0_div');
+
+        addGoogleLinePlot(iostat_log.time, iostat_log.dev, iostat_log.dat.map(function(value,index) { return value[5]; }),
+                iostat_log.var[5], 'chart1_div');
+
+        addGoogleLinePlot(cpus_log.time, ['CPU'], [cpus_log.dat], 'CPU Usage (%)', 'chart2_div');
+        addGoogleLinePlot(mem_log.time, ['Memory'], [mem_log.dat], 'Free Memory(B)', 'chart3_div');
+
+
+
+    }
 
     google.load('visualization', '1', {packages: ['corechart', 'line'], "callback": drawBasic});
 
