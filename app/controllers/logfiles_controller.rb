@@ -65,7 +65,7 @@ class LogfilesController < ApplicationController
     mem = {}
     csv = CSV.parse(s, {:col_sep => ",\t"})
     csv.shift
-    mem[:time] = csv.map{|x| DateTime.strptime(x[0],'%L:%M:%S').to_i}
+    mem[:time] = csv.map{|x| DateTime.strptime(x[0],'%H:%M:%S').to_i}
     mem[:time] = mem[:time].map{|t| t-mem[:time][0]}    
     mem[:dat] = csv.map{|x| x[1].to_i}
     
