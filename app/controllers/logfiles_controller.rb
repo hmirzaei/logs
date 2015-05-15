@@ -54,6 +54,10 @@ class LogfilesController < ApplicationController
     cpus = {}
     csv = CSV.parse(s, {:col_sep => " "})
     csv.shift
+    @summary.user_cpu = csv.map{|x| x[3].to_f}.inject(:+)/csv.length
+    @summary.sys_cpu = csv.map{|x| x[5].to_f}.inject(:+)/csv.length
+    @summary.idle = csv.map{|x| x[-1].to_f}.inject(:+)/csv.length
+
     cpus[:time] = csv.map{|x| DateTime.strptime(x[0]+' '+x[1],'%l:%M:%S %p').to_i}
     cpus[:time] = cpus[:time].map{|t| t-cpus[:time][0]}    
     cpus[:dat] = csv.map{|x| x[3].to_f + x[5].to_f}
@@ -214,12 +218,6 @@ class LogfilesController < ApplicationController
         if !s.nil?
           @mem_log=parse_mem(s)
         end
-      elsif entry.full_name.start_with?("lperf/plot/cpus")
-        csv = CSV.parse(entry.read, {:col_sep => " "})
-        csv.shift
-        @summary.user_cpu = csv.map{|x| x[3].to_f}.inject(:+)/csv.length
-        @summary.sys_cpu = csv.map{|x| x[5].to_f}.inject(:+)/csv.length
-        @summary.idle = csv.map{|x| x[-1].to_f}.inject(:+)/csv.length
       end
     end
     tar_extract.close    
