@@ -193,7 +193,7 @@ class LogfilesController < ApplicationController
     tar_extract = Gem::Package::TarReader.new(File.open(@logfile.attachment.path))
     tar_extract.rewind # The extract has to be rewinded after every iteration
     tar_extract.each do |entry|
-      if entry.full_name == "mlapp/out"
+      if entry.full_name == "#{@logfile.app}/out"
         console = entry.read;
         parse_console(console);
       elsif entry.full_name.start_with?("runtest_")
