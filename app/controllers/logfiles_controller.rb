@@ -26,14 +26,14 @@ class LogfilesController < ApplicationController
   end
   
   def cascade(a,b) 
-    (a.zip b).map{|a_row, b_row| (a_row.zip b_row).map{|a_col, b_col| (a_col.is_a? Array) ? a_col+ [b_col]:[a_col]+[b_col]}} 
+    (a.zip b).map{|a_row, b_row| (a_row.zip b_row).map{|a_col, b_col| a_col+ b_col}} 
   end
 
 
   def parse_iostat(s)
     iostat = {}
     csv = s.split("\n\n")[1..-1].map{|x| CSV.parse x, {:col_sep => " "}}
-    iostat_raw = csv.inject{|result,n| cascade(result,n)}
+    iostat_raw = csv.map{|mat| mat.map {|row| row.map {|col| [col]}}}.inject{|result,n| cascade(result,n)}
 
     iostat[:dev] =  csv[0][1..-1].transpose[0][1..-1]
     iostat[:var] =  csv[0][1][1..-1]
@@ -54,14 +54,16 @@ class LogfilesController < ApplicationController
     cpus = {}
     csv = CSV.parse(s, {:col_sep => " "})
     csv.shift
-    @summary.user_cpu = csv.map{|x| x[3].to_f}.inject(:+)/csv.length
-    @summary.sys_cpu = csv.map{|x| x[5].to_f}.inject(:+)/csv.length
-    @summary.idle = csv.map{|x| x[-1].to_f}.inject(:+)/csv.length
+    if !csv.empty? then
+      
+      @summary.user_cpu = csv.map{|x| x[3].to_f}.inject(:+)/csv.length
+      @summary.sys_cpu = csv.map{|x| x[5].to_f}.inject(:+)/csv.length
+      @summary.idle = csv.map{|x| x[-1].to_f}.inject(:+)/csv.length
 
-    cpus[:time] = csv.map{|x| DateTime.strptime(x[0]+' '+x[1],'%l:%M:%S %p').to_i}
-    cpus[:time] = cpus[:time].map{|t| t-cpus[:time][0]}    
-    cpus[:dat] = csv.map{|x| x[3].to_f + x[5].to_f}
-    
+      cpus[:time] = csv.map{|x| DateTime.strptime(x[0]+' '+x[1],'%l:%M:%S %p').to_i}
+      cpus[:time] = cpus[:time].map{|t| t-cpus[:time][0]}    
+      cpus[:dat] = csv.map{|x| x[3].to_f + x[5].to_f}
+    end
     cpus
   end
 
