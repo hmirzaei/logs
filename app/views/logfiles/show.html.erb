@@ -144,8 +144,10 @@ $(document).ready(function () {
 <div align="center" >
   <span> Log Parameter: </span>
   <select  onchange="fieldChanged(this.value)" style="width:300px">
-    <% @all_keys.each do |key| %>
-    <option value= "<%=raw key %>" <%if key == "Task Duration" %> selected="selected" <% end %> > <%=raw key %> </option>
+    <% if !@all_keys.nil? then %>
+      <% @all_keys.each do |key| %>
+        <option value= "<%=raw key %>" <%if key == "Task Duration" %> selected="selected" <% end %> > <%=raw key %> </option>
+      <% end %>
     <% end %>
   </select>
 </div>
